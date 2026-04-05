@@ -1,4 +1,4 @@
-package com.rideapp.system;
+package com.rideapp.pricing;
 
 public class SurgePricing implements PricingStrategy {
     @Override

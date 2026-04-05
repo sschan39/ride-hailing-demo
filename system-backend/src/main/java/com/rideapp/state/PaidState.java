@@ -1,6 +1,7 @@
-package com.rideapp.models;
+package com.rideapp.state;
 
-import com.rideapp.driver.Driver;
+import com.rideapp.models.Driver;
+import com.rideapp.models.Ride;
 
 public class PaidState implements RideState {
     @Override
@@ -11,4 +12,9 @@ public class PaidState implements RideState {
     public void complete(Ride ride) { System.out.println("Ride is closed and paid."); }
     @Override
     public void processPayment(Ride ride) { System.out.println("Ride is already paid."); }
+
+
+    @Override
+    public boolean isPayable() {return false;}
 }
+

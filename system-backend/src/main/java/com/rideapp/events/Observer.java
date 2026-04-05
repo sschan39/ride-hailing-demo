@@ -1,8 +1,8 @@
-package com.rideapp.driver;
+package com.rideapp.events;
 
 import com.rideapp.models.Ride;
 
 // Observer Interface
-interface Observer {
+public interface Observer {
     void update(Ride ride);
 }
