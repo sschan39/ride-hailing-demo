@@ -2,6 +2,7 @@
 package com.rideapp.models;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import com.rideapp.events.Observer;
@@ -9,6 +10,7 @@ import com.rideapp.events.Observer;
 public class Driver extends User implements Observer {
     private boolean isAvailable;
     private double accountBalance = 0.0;
+    private Location currentLocation;
 
     private List<Vehicle> registeredVehicles = new ArrayList<>();
     private Vehicle activeVehicle; // The one currently being driven
@@ -65,4 +67,17 @@ public class Driver extends User implements Observer {
     }
 
     public Vehicle getActiveVehicle() { return activeVehicle; }
+
+    public List<Vehicle> getRegisteredVehicles() {
+        return registeredVehicles;
+    }
+    
+    public void updateLocation(Location location) {
+        this.currentLocation = location;
+        // In a real app, this would ping the dispatcher every few seconds
+    }
+
+    public Location getCurrentLocation() {
+        return currentLocation;
+    }
 }

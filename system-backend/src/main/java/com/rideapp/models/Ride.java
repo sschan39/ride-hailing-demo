@@ -12,13 +12,14 @@ import java.util.UUID;
 public class Ride {
     private final String id; // Unique ID
     private Passenger passenger;
-    private String origin;
-    private String destination;
+    private Location origin;
+    private Location destination;
     private double distance;
     private RideState state;
     private PricingStrategy pricingStrategy;
     private Driver driver;
     private List<String> acceptableVehicleTypes;
+    private int estimatedTimeMinutes;
     
     // New time tracking fields
     private LocalDateTime startTime;
@@ -27,7 +28,7 @@ public class Ride {
     private boolean driverConfirmedEnd = false;
 
     // Notice the constructor no longer needs the ID, it generates it automatically
-    public Ride(Passenger passenger, String origin, String destination, double distance, 
+    public Ride(Passenger passenger, Location origin, Location destination, double distance, 
                 List<String> acceptableVehicleTypes, PricingStrategy pricingStrategy) {
         this.id = UUID.randomUUID().toString(); 
         this.passenger = passenger;

@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.Mockito.*;
+
+import java.util.Arrays;
 
 class RideTest {
     private Ride ride;
@@ -32,7 +35,7 @@ class RideTest {
         when(stubPricing.calculateFare(anyDouble())).thenReturn(20.0);
 
         // 3. Initialize the Object Under Test
-        ride = new Ride(mockPassenger, "Point A", "Point B", 10.0, stubPricing);
+        ride = new Ride(mockPassenger, "Point A", "Point B", 10.0, Arrays.asList("STANDARD"),stubPricing);
     }
 
     @Test

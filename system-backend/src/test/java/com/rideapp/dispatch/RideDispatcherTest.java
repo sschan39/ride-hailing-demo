@@ -8,6 +8,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+// Add this import to use Arrays.asList
+import java.util.Arrays; 
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -31,24 +34,21 @@ class RideDispatcherTest {
 
     @Test
     void testUnauthorizedPassengerCannotRequestRide() {
-        // Pass null as passenger
-        dispatcher.requestRide(null, "A", "B", 5.0, stubPricing);
+        // FIX: Added Arrays.asList("STANDARD") as the 5th argument
+        dispatcher.requestRide(null, "A", "B", 5.0, Arrays.asList("STANDARD"), stubPricing);
         
-        // Depending on your implementation, you might want to expose the queue size
-        // for testing, or check console output. Assuming you expose getPendingRidesCount():
-        // assertEquals(0, dispatcher.getPendingRidesCount());
+        // Assertions remain the same
     }
 
     @Test
     void testDriverIsMatchedWhenJoiningQueueWithPendingRides() {
-        // 1. Passenger requests ride first (nobody online)
-        dispatcher.requestRide(stubPassenger, "A", "B", 5.0, stubPricing);
+        // FIX: Added Arrays.asList("STANDARD") as the 5th argument
+        dispatcher.requestRide(stubPassenger, "A", "B", 5.0, Arrays.asList("STANDARD"), stubPricing);
         
-        // 2. Driver goes online
-        dispatcher.addAvailableDriver(stubDriver);
+        // 2. Driver goes online (Make sure to pass the dummy license plate we added earlier!)
+        dispatcher.addAvailableDriver(stubDriver, "DUMMY-PLATE");
         
         // 3. Verify the driver was notified and accepted the ride
-        // Mockito's 'verify' checks if a method was called on the stub
         verify(stubDriver, times(1)).update(any());
         verify(stubDriver, times(1)).acceptRide(any());
     }
