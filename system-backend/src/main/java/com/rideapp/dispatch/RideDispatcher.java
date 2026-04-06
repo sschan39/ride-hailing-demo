@@ -6,6 +6,7 @@ import com.rideapp.models.Driver;
 import com.rideapp.models.Location;
 import com.rideapp.models.Passenger;
 import com.rideapp.models.Ride;
+import com.rideapp.models.Route;
 import com.rideapp.pricing.PricingStrategy;
 
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ public class RideDispatcher {
         this.onlineDrivers = new ArrayList<>();
         driverQueues.put("STANDARD", new LinkedList<>());
         driverQueues.put("SUV", new LinkedList<>());
+        this.mapProvider = mapProvider;
     }
 
     public static RideDispatcher getInstance(MapProvider mapProvider) {
@@ -53,30 +55,29 @@ public class RideDispatcher {
               });
     }
 
-    public Ride requestRide(Passenger passenger, Location origin, Location destination, 
+public Ride requestRide(Passenger passenger, Location origin, Location destination, 
                             List<String> acceptableTypes, PricingStrategy pricingStrategy) {
         
-        // 1. Calculate trip metrics using the MapProvider
-        double tripDistance = mapProvider.calculateDistance(origin, destination);
-        int tripEta = mapProvider.calculateETA(tripDistance);
+        // 1. ONE clean call to the Map API
+        Route tripRoute = mapProvider.getRoute(origin, destination);
 
         System.out.println("\n[SYSTEM] Ride Requested: " + origin.getAddress() + " -> " + destination.getAddress());
-        System.out.printf("  -> Estimated Distance: %.2f km | ETA: %d mins%n", tripDistance, tripEta);
+        System.out.println("  -> Route Details: " + tripRoute);
 
-        Ride newRide = new Ride(passenger, origin, destination, tripDistance, tripEta, acceptableTypes, pricingStrategy);
+        // 2. Pass the Route object directly into the Ride
+        Ride newRide = new Ride(passenger, origin, destination, tripRoute, acceptableTypes, pricingStrategy);
 
-        // 2. Geospatial Search: Find the closest driver
+        // 3. Geospatial Search
         Driver closestDriver = findClosestEligibleDriver(origin, acceptableTypes);
 
         if (closestDriver != null) {
             System.out.println("[DISPATCHER] MATCHED! Closest driver is " + closestDriver.getUsername() + " in a " + closestDriver.getActiveVehicle().getVehicleType());
             
-            closestDriver.setAvailable(false); // Take them off the market
+            closestDriver.setAvailable(false); 
             closestDriver.update(newRide);
             closestDriver.acceptRide(newRide);
         } else {
             System.out.println("[DISPATCHER] No drivers available nearby. Adding to waiting list...");
-            // In a full implementation, you'd add this ride to a pending list and retry periodically.
         }
 
         return newRide;
@@ -87,22 +88,16 @@ public class RideDispatcher {
         double minDistance = Double.MAX_VALUE;
 
         for (Driver driver : onlineDrivers) {
-            if (!driver.isAvailable()) continue; // Skip busy/offline drivers
-            
-            // Check if vehicle type is acceptable
+            if (!driver.isAvailable()) continue; 
             if (!acceptableTypes.contains(driver.getActiveVehicle().getVehicleType())) continue;
 
-            // Calculate driver's distance to the pickup location
-            double distanceToPickup = mapProvider.calculateDistance(driver.getCurrentLocation(), pickupLocation);
+            // Use the lightweight straight-line check for proximity
+            double distanceToPickup = mapProvider.getStraightLineDistance(driver.getCurrentLocation(), pickupLocation);
 
-            // Check if within radius and is the closest so far
             if (distanceToPickup <= MAX_SEARCH_RADIUS_KM && distanceToPickup < minDistance) {
                 minDistance = distanceToPickup;
                 closest = driver;
             }
-        }
-        if (closest != null) {
-            System.out.printf("  -> Driver %s is %.2f km away from pickup.%n", closest.getUsername(), minDistance);
         }
         return closest;
     }

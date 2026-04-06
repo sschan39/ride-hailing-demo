@@ -2,8 +2,10 @@
 package com.rideapp.map;
 
 import com.rideapp.models.Location;
+import com.rideapp.models.Route;
 
 public interface MapProvider {
-    double calculateDistance(Location origin, Location destination);
-    int calculateETA(double distanceKm);
+    Route getRoute(Location origin, Location destination);
+
+    double getStraightLineDistance(Location loc1, Location loc2);
 }

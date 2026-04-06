@@ -14,12 +14,11 @@ public class Ride {
     private Passenger passenger;
     private Location origin;
     private Location destination;
-    private double distance;
     private RideState state;
     private PricingStrategy pricingStrategy;
     private Driver driver;
     private List<String> acceptableVehicleTypes;
-    private int estimatedTimeMinutes;
+    private Route route;
     
     // New time tracking fields
     private LocalDateTime startTime;
@@ -28,17 +27,16 @@ public class Ride {
     private boolean driverConfirmedEnd = false;
 
     // Notice the constructor no longer needs the ID, it generates it automatically
-    public Ride(Passenger passenger, Location origin, Location destination, double distance, 
+    public Ride(Passenger passenger, Location origin, Location destination, Route route, 
                 List<String> acceptableVehicleTypes, PricingStrategy pricingStrategy) {
-        this.id = UUID.randomUUID().toString(); 
+        this.id = UUID.randomUUID().toString();
         this.passenger = passenger;
         this.origin = origin;
         this.destination = destination;
-        this.distance = distance;
+        this.route = route;
+        this.acceptableVehicleTypes = acceptableVehicleTypes;
         this.pricingStrategy = pricingStrategy;
         this.state = new RequestedState();
-        this.acceptableVehicleTypes = acceptableVehicleTypes;
-
     }
 
 
@@ -69,9 +67,8 @@ public class Ride {
 
     // Existing Getters/Setters and State delegation
     public Passenger getPassenger() { return passenger; }
-
-    public double getDistance() { return distance; }
-
+    public Route getRoute() { return route; }
+    public double getDistance() { return route.getDistanceKm(); }
     public PricingStrategy getPricingStrategy() { return pricingStrategy; }
 
     public void setDriver(Driver driver) { this.driver = driver; }
