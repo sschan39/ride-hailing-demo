@@ -23,6 +23,10 @@ public class DummyMapProvider implements MapProvider {
 
     @Override
     public Route getRoute(Location origin, Location destination) {
+        if (origin.getAddress().equalsIgnoreCase("Invalid") || destination.getAddress().equalsIgnoreCase("Invalid")) {
+            System.out.println("[MAP ERROR] Cannot calculate route: Invalid address provided.");
+            return null; // Return null to signify failure
+        }
         // In a real app, this would hit an API to get actual road distance, 
         // accounting for traffic and one-way streets.
         // For our dummy provider, we just use the straight-line distance.

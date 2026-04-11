@@ -57,9 +57,22 @@ public class RideDispatcher {
 
 public Ride requestRide(Passenger passenger, Location origin, Location destination, 
                             List<String> acceptableTypes, PricingStrategy pricingStrategy) {
-        
+
+        // NEW: Precondition Check
+        if (!passenger.hasValidPaymentMethod() || passenger.hasUnpaidBalance()) {
+            System.out.println("[SYSTEM REJECTED] Account status abnormal. Please check payment method or unpaid balances.");
+            return null;
+        }
+
         // 1. ONE clean call to the Map API
+        // NEW: Alternative Course 3a (Invalid Route)
         Route tripRoute = mapProvider.getRoute(origin, destination);
+        if (tripRoute == null) {
+            System.out.println("[SYSTEM REJECTED] Could not calculate route. Please re-enter your pickup or dropoff location.");
+            return null;
+        }
+        
+       
 
         System.out.println("\n[SYSTEM] Ride Requested: " + origin.getAddress() + " -> " + destination.getAddress());
         System.out.println("  -> Route Details: " + tripRoute);
@@ -78,7 +91,10 @@ public Ride requestRide(Passenger passenger, Location origin, Location destinati
             closestDriver.acceptRide(newRide);
         } else {
             System.out.println("[DISPATCHER] No drivers available nearby. Adding to waiting list...");
+            return null;
+        
         }
+
 
         return newRide;
     }
