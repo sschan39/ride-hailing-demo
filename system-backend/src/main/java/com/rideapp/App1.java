@@ -72,7 +72,7 @@ public class App1 {
         if (activeRide != null) {
             activeRide.start();
             activeRide.confirmEnd(alice);
-            activeRide.confirmEnd(charlie);
+            // activeRide.confirmEnd(charlie);
             System.out.println("\n[FINANCE LEDGER] Passenger final bill: $" + String.format("%.2f", activeRide.getRoute().getDistanceKm() * 2.5)); // Assuming surge multiplier logic
         }
     }

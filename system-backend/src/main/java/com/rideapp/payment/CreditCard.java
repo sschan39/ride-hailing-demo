@@ -11,6 +11,8 @@ public class CreditCard extends PaymentMethod {
         this.expirationDate = expirationDate;
     }
 
+    public String getCardNumber() { return cardNumber; }
+
     @Override
     public String getMaskedDetails() {
         String lastFour = cardNumber.substring(Math.max(0, cardNumber.length() - 4));

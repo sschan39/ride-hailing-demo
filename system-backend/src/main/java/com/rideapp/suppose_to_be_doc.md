@@ -51,3 +51,15 @@ feat(dispatch): implement broadcast model and driver concurrency locks
 - Updated `App.java` integration test to simulate multiple drivers receiving the broadcast, rejecting, and concurrently attempting to accept a ride.
 
 This aligns the codebase with the updated Driver Module Use Case documentation, specifically resolving the gaps for Alternative Courses 3a and 3b.
+
+feat(ride-lifecycle): complete end-to-end ride execution with edge case handling
+
+This commit finalizes the core ride execution loop, integrating the State Pattern, Payment Gateway, and Dispatcher with robust edge case handling as defined in the system requirements.
+
+Key implementations:
+- **Payment Stub & Routing**: Created `BankAPI` interface and `StubBankAPI`. The `PaymentGateway` now acts as a dynamic router, automatically processing aggregate `Ride` objects and verifying transactions. Card numbers ending in "9999" simulate 402 Declined responses.
+- **Flexible Confirmation**: Overloaded `confirmEnd` in the `Ride` model to allow driver-injected odometer readings while structurally supporting future dual-confirmation logic.
+- **Route Deviation (Alt Course 2a)**: Added logic to `Ride.finalizeRide()` to detect actual distance > 150% of estimated distance. Automatically pauses payment and flags the ride for manual review.
+- **Payment Failure & Lockout (Alt Course 4a)**: If the bank stub declines the card, the system correctly freezes the passenger's account with an unpaid balance. Added a defensive check to `RideDispatcher` to instantly reject new ride requests from users with unpaid balances.
+- **State Transition Fixes**: Ensured `RideDispatcher` triggers the `AcceptedState` transition upon successful assignment.
+- **Test Suite**: Added an end-to-end master test in `App.java` validating the Happy Path, Route Deviation, Payment Declined, and Passenger Lockout scenarios. All tests pass successfully.

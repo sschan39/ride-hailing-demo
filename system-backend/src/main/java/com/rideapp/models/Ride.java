@@ -20,13 +20,17 @@ public class Ride {
     private List<String> acceptableVehicleTypes;
     private Route route;
     
-    // New time tracking fields
+    // Time tracking fields
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+
+    // NEW: Flexible confirmation and deviation tracking
     private boolean passengerConfirmedEnd = false;
     private boolean driverConfirmedEnd = false;
+    private boolean requiresDualConfirmation = false; // Feature flag: defaults to driver-only
+    private double actualDistanceKm;
+    private boolean requiresManualReview = false;
 
-    // Notice the constructor no longer needs the ID, it generates it automatically
     public Ride(Passenger passenger, Location origin, Location destination, Route route, 
                 List<String> acceptableVehicleTypes, PricingStrategy pricingStrategy) {
         this.id = UUID.randomUUID().toString();
@@ -39,61 +43,96 @@ public class Ride {
         this.state = new RequestedState();
     }
 
+    // Driver confirmation (includes odometer reading for Alt Course 2a)
+    public void confirmEnd(Driver driver, double actualDistanceKm) {
+        if (this.driver != driver) return;
+        this.driverConfirmedEnd = true;
+        this.actualDistanceKm = actualDistanceKm;
+        System.out.println("🏁 [ACTION] Driver " + driver.getUsername() + " confirmed ride end.");
+        evaluateCompletion();
+    }
 
-    public void confirmEnd(User user) {
-        if (user.getRole().equals("PASSENGER")) {
-            passengerConfirmedEnd = true;
-            System.out.println("[RIDE] Passenger " + user.getUsername() + " confirmed arrival.");
-        } else if (user.getRole().equals("DRIVER")) {
-            driverConfirmedEnd = true;
-            System.out.println("[RIDE] Driver " + user.getUsername() + " confirmed arrival.");
+    // Passenger confirmation (kept for flexible dual-confirmation support)
+    public void confirmEnd(Passenger passenger) {
+        if (this.passenger != passenger) return;
+        this.passengerConfirmedEnd = true;
+        System.out.println("🏁 [ACTION] Passenger " + passenger.getUsername() + " confirmed ride end.");
+        evaluateCompletion();
+    }
+
+    // Centralized check to see if we transition out of active state
+    private void evaluateCompletion() {
+        if (requiresDualConfirmation && (!driverConfirmedEnd || !passengerConfirmedEnd)) {
+            System.out.println("⏳ [SYSTEM] Waiting for both parties to confirm...");
+            return;
+        }
+        if (!requiresDualConfirmation && !driverConfirmedEnd) {
+            return; // Even in single-mode, the driver MUST confirm
         }
 
-        // If both have confirmed, the Ride triggers its own state transitions
-        if (passengerConfirmedEnd && driverConfirmedEnd) {
-            this.complete();         // State Pattern shifts to Completed
-            this.processPayment();   // State Pattern handles the gateway and shifts to Paid
+        System.out.println("🔄 [SYSTEM] Confirmation criteria met. Processing ride end...");
+        finalizeRide();
+    }
+
+    private void finalizeRide() {
+        // Alternative Course 2a - Route Deviation Check (>50% difference)
+        double estimatedDistance = route.getDistanceKm();
+        if (actualDistanceKm > (estimatedDistance * 1.5)) {
+            System.out.println("🚨 [SYSTEM ALERT] Route severely deviated! Est: " + estimatedDistance + "km, Actual: " + actualDistanceKm + "km.");
+            this.requiresManualReview = true;
+            System.out.println("⏸️ [SYSTEM] Payment paused. Flagged for manual review by customer service.");
+            return;
+        }
+
+        // If everything is normal, trigger State Pattern transitions
+        this.complete();         // Shifts to Completed state
+        this.processPayment();   // Shifts to Paid state (delegates to PaymentGateway internally)
+        
+        // Postcondition - Unlock Driver
+        if (this.driver != null) {
+            this.driver.setAvailable(true);
         }
     }
 
-
-    // New Getters and Setters
-    public RideState getState() {return state;}
+    // --- Getters and Setters ---
+    public RideState getState() { return state; }
     public String getId() { return id; }
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 
-    // Existing Getters/Setters and State delegation
     public Passenger getPassenger() { return passenger; }
     public Route getRoute() { return route; }
-    public double getDistance() { return route.getDistanceKm(); }
+    
+    // Updated to use actual distance if recorded, falling back to estimated route distance
+    public double getDistance() { 
+        return actualDistanceKm > 0 ? actualDistanceKm : route.getDistanceKm(); 
+    }
+    
+    public double getActualDistanceKm() { return actualDistanceKm; }
     public PricingStrategy getPricingStrategy() { return pricingStrategy; }
 
     public void setDriver(Driver driver) { this.driver = driver; }
-    public Driver getDriver() {return driver;}
+    public Driver getDriver() { return driver; }
 
-    public List<String> getAcceptableVehicleTypes() { 
-        return acceptableVehicleTypes; 
-    }
+    public List<String> getAcceptableVehicleTypes() { return acceptableVehicleTypes; }
 
     public void setState(RideState state) { this.state = state; }
 
+    // State delegation
     public void accept(Driver driver) { state.accept(this, driver); }
     public void start() { state.start(this); }
     public void complete() { state.complete(this); }
     public void processPayment() { state.processPayment(this); }
 
     public boolean isPayable() {
-        return state.isPayable();
+        // Defensive check: A flagged ride is never payable, regardless of State Pattern status
+        return !requiresManualReview && state.isPayable();
     }
 
-
-    public Location getOrigin() {
-        return origin;
-    }
-    public Location getDestination () {return destination;}
-
-
+    public Location getOrigin() { return origin; }
+    public Location getDestination() { return destination; }
+    
+    public boolean requiresManualReview() { return requiresManualReview; }
 }

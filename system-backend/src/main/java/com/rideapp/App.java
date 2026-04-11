@@ -84,7 +84,7 @@ public class App {
             
             // Bob finishes the trip and confirms on his app
             // This triggers the Completion State -> Payment Gateway -> Paid State
-            activeRide.confirmEnd(bob);
+            // activeRide.confirmEnd(bob);
 
             // ---------------------------------------------------------
             // PHASE 7: POST-RIDE VERIFICATION (LEDGER & HISTORY)

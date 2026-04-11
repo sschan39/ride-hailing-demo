@@ -59,6 +59,10 @@ public Ride requestRide(Passenger passenger, Location origin, Location destinati
                             List<String> acceptableTypes, PricingStrategy pricingStrategy) {
 
         // NEW: Precondition Check
+        if (passenger.hasUnpaidBalance()) {
+            System.out.println("🚨 [DISPATCHER] Request denied: " + passenger.getUsername() + " has an unpaid balance. Please update your payment method.");
+            return null;
+        }
         if (!passenger.hasValidPaymentMethod() || passenger.hasUnpaidBalance()) {
             System.out.println("[SYSTEM REJECTED] Account status abnormal. Please check payment method or unpaid balances.");
             return null;
@@ -127,6 +131,7 @@ public Ride requestRide(Passenger passenger, Location origin, Location destinati
 
         // Otherwise, assign it and lock it
         ride.setDriver(driver);
+        ride.accept(driver);
         System.out.println("✅ [SYSTEM] Ride successfully assigned to " + driver.getUsername() + ". Stopping broadcast.");
         return true;
     }
