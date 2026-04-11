@@ -29,3 +29,16 @@ Security Gate: The Ride transitions to CompletedState. The system checks isPayab
 The Split: The PaymentGateway calculates the final fare using the injected PricingStrategy (Strategy Pattern). It extracts the 20% platform fee and credits the remaining balance to the Driver's account.
 
 The Receipt: The heavy Ride object is converted into an immutable RideRecord (DTO) and saved to both the Passenger's and Driver's ride histories.
+
+
+
+11/4
+feat: replace boolean payment flags with PaymentMethod class hierarchy
+
+- Created abstract `PaymentMethod` class to standardise payment validation and masking.
+- Implemented `CreditCard` subclass to handle specific card details (number, exp date).
+- Refactored `Passenger` model to replace `hasValidPaymentMethod` boolean with an actual `PaymentMethod` object dependency.
+- Refactored `Passenger` model to replace `hasUnpaidBalance` boolean with a precise `double unpaidBalance` tracker.
+- Updated `App.java` integration tests to demonstrate adding a credit card and clearing account debt before ride requests.
+
+This resolves the primitive obsession regarding user account standing and aligns the codebase with the Precondition requirements specified in the Passenger Module Use Case document.
