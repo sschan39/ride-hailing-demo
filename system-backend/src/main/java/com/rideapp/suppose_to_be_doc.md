@@ -42,3 +42,12 @@ feat: replace boolean payment flags with PaymentMethod class hierarchy
 - Updated `App.java` integration tests to demonstrate adding a credit card and clearing account debt before ride requests.
 
 This resolves the primitive obsession regarding user account standing and aligns the codebase with the Precondition requirements specified in the Passenger Module Use Case document.
+
+feat(dispatch): implement broadcast model and driver concurrency locks
+
+- Refactored `RideDispatcher` to broadcast ride requests to all nearby eligible drivers instead of forcing direct assignment.
+- Added `receivePushNotification`, `tryAcceptRide`, and `rejectRide` methods to the `Driver` model to support driver autonomy.
+- Implemented a `synchronized` lock (`assignRideToDriver`) in the dispatcher to handle race conditions (Alternative Course 3b), ensuring only the first driver to accept is assigned the ride.
+- Updated `App.java` integration test to simulate multiple drivers receiving the broadcast, rejecting, and concurrently attempting to accept a ride.
+
+This aligns the codebase with the updated Driver Module Use Case documentation, specifically resolving the gaps for Alternative Courses 3a and 3b.
