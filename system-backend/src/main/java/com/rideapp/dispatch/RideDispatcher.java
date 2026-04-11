@@ -79,70 +79,55 @@ public Ride requestRide(Passenger passenger, Location origin, Location destinati
 
         // 2. Pass the Route object directly into the Ride
         Ride newRide = new Ride(passenger, origin, destination, tripRoute, acceptableTypes, pricingStrategy);
-
+        double estimatedFare = pricingStrategy.calculateFare(tripRoute.getDistanceKm());
         // 3. Geospatial Search
-        Driver closestDriver = findClosestEligibleDriver(origin, acceptableTypes);
+        System.out.println("\n[SYSTEM] Broadcasting ride request to nearby drivers...");
 
-        if (closestDriver != null) {
-            System.out.println("[DISPATCHER] MATCHED! Closest driver is " + closestDriver.getUsername() + " in a " + closestDriver.getActiveVehicle().getVehicleType());
-            
-            closestDriver.setAvailable(false); 
-            closestDriver.update(newRide);
-            closestDriver.acceptRide(newRide);
-        } else {
-            System.out.println("[DISPATCHER] No drivers available nearby. Adding to waiting list...");
+        // 1. Find ALL nearby eligible drivers, not just one
+        List<Driver> nearbyDrivers = findNearbyEligibleDrivers(origin, acceptableTypes);
+
+        if (nearbyDrivers.isEmpty()) {
+            System.out.println("[DISPATCHER] No drivers available nearby within 5km.");
             return null;
-        
         }
 
+        // 2. Broadcast the push notification to all of them
+        for (Driver driver : nearbyDrivers) {
+            driver.receivePushNotification(newRide, estimatedFare);
+        }
 
         return newRide;
+
+
     }
 
-    private Driver findClosestEligibleDriver(Location pickupLocation, List<String> acceptableTypes) {
-        Driver closest = null;
-        double minDistance = Double.MAX_VALUE;
-
+    // NEW: Finds a list of drivers instead of just one
+    private List<Driver> findNearbyEligibleDrivers(Location pickupLocation, List<String> acceptableTypes) {
+        List<Driver> eligible = new ArrayList<>();
         for (Driver driver : onlineDrivers) {
-            if (!driver.isAvailable()) continue; 
-            if (!acceptableTypes.contains(driver.getActiveVehicle().getVehicleType())) continue;
-
-            // Use the lightweight straight-line check for proximity
-            double distanceToPickup = mapProvider.getStraightLineDistance(driver.getCurrentLocation(), pickupLocation);
-
-            if (distanceToPickup <= MAX_SEARCH_RADIUS_KM && distanceToPickup < minDistance) {
-                minDistance = distanceToPickup;
-                closest = driver;
+            if (!driver.isAvailable() || !acceptableTypes.contains(driver.getActiveVehicle().getVehicleType())) continue;
+            
+            double distance = mapProvider.getStraightLineDistance(driver.getCurrentLocation(), pickupLocation);
+            if (distance <= MAX_SEARCH_RADIUS_KM) {
+                eligible.add(driver);
             }
         }
-        return closest;
+        return eligible;
     }
 
 
-    // The advanced non-blocking matchmaker
-    private void attemptMatch() {
-        Iterator<Ride> rideIterator = pendingRides.iterator();
-        
-        while (rideIterator.hasNext()) {
-            Ride ride = rideIterator.next();
-            
-            // Check if any of the passenger's acceptable types have an available driver
-            for (String allowedType : ride.getAcceptableVehicleTypes()) {
-                Queue<Driver> availableDriversForType = driverQueues.get(allowedType);
-                
-                if (availableDriversForType != null && !availableDriversForType.isEmpty()) {
-                    // Match found!
-                    Driver matchedDriver = availableDriversForType.poll();
-                    System.out.println("[DISPATCHER] MATCHED! " + ride.getPassenger().getUsername() + " gets " + matchedDriver.getUsername() + "'s " + allowedType);
-                    
-                    matchedDriver.update(ride);
-                    matchedDriver.acceptRide(ride);
-                    
-                    // Remove the ride from the pending list so it doesn't get matched again
-                    rideIterator.remove(); 
-                    break; // Stop looking for vehicles for THIS ride, move to next ride
-                }
-            }
+
+    // NEW: Step 4 & Alt 3b - The concurrency lock for accepting a ride
+    public synchronized boolean assignRideToDriver(Driver driver, Ride ride) {
+        // If the ride already has a driver, someone else beat them to it!
+        if (ride.getDriver() != null) {
+            System.out.println("⚠️ [SYSTEM] Sorry " + driver.getUsername() + ", this order has already been taken by another driver.");
+            return false;
         }
+
+        // Otherwise, assign it and lock it
+        ride.setDriver(driver);
+        System.out.println("✅ [SYSTEM] Ride successfully assigned to " + driver.getUsername() + ". Stopping broadcast.");
+        return true;
     }
 }

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.rideapp.dispatch.RideDispatcher;
 import com.rideapp.events.Observer;
 
 public class Driver extends User implements Observer {
@@ -18,6 +19,31 @@ public class Driver extends User implements Observer {
     public Driver(String username, String hashedPassword) {
         super(username, hashedPassword);
         this.isAvailable = false; 
+    }
+
+    // NEW: Step 2 - Receive push notification with required details
+    public void receivePushNotification(Ride ride, double estimatedFare) {
+        System.out.println("📱 [APP - " + getUsername() + "] New Ride Request!");
+        System.out.println("    📍 Pickup: " + ride.getOrigin().getAddress());
+        System.out.println("    📏 Distance: " + String.format("%.2f", ride.getDistance()) + " km");
+        System.out.println("    💰 Est. Fare: $" + String.format("%.2f", estimatedFare));
+    }
+    // NEW: Step 3 & 5 - Driver actively chooses to accept
+    public void tryAcceptRide(Ride ride) {
+        System.out.println("👉 [ACTION] " + getUsername() + " clicked 'Accept'...");
+        
+        boolean success = RideDispatcher.getInstance(null).assignRideToDriver(this, ride);
+        
+        if (success) {
+            this.setAvailable(false);
+            // Step 5 - Start Navigation
+            System.out.println("🗺️ [NAVIGATION] Routing " + getUsername() + " to " + ride.getOrigin().getAddress() + "...\n");
+        }
+    }
+
+    // NEW: Alternative Course 3a - Driver actively rejects
+    public void rejectRide(Ride ride) {
+        System.out.println("❌ [ACTION] " + getUsername() + " clicked 'Reject'.");
     }
 
     @Override

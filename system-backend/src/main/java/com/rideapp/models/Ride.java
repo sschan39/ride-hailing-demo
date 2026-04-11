@@ -90,4 +90,10 @@ public class Ride {
     }
 
 
+    public Location getOrigin() {
+        return origin;
+    }
+    public Location getDestination () {return destination;}
+
+
 }
