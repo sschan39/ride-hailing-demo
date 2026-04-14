@@ -1,31 +1,68 @@
-Phase 1: Setup & Availability
-Account Registration: The AuthService (Singleton) handles secure registration and login for both Passenger and Driver (which inherit from the User base class).
+## Regenerated Use Case Diagram
 
-The Garage: Drivers instantiate their specific Vehicle types (StandardCar, SUV) and register them.
+```plantuml
+@startuml
+left to right direction
+skinparam packageStyle rectangle
 
-Going Online: A driver logs in, selects their active vehicle, pushes their current GPS Location to the system, and tells the RideDispatcher they are available.
+actor User
+actor Passenger
+actor Driver
+actor "Map Provider" as MapProvider
+actor "Payment Gateway" as PaymentGateway
 
-Phase 2: The Request & Geospatial Dispatch
-The Request: A passenger defines their Origin, Destination, and acceptable vehicle types.
+Passenger --|> User
+Driver --|> User
 
-Routing: The Dispatcher queries the MapProvider (Facade Pattern) to calculate the physical distance and ETA, returning a clean Route DTO.
+rectangle "Ride Hailing System" {
+  usecase "Register Account" as UC_Register
+  usecase "Login" as UC_Login
+  usecase "View Ride History" as UC_History
 
-Geospatial Search: The Dispatcher scans its master list of online drivers, using the MapProvider's straight-line calculation to find drivers within a specific radius (e.g., 5km) who have the right vehicle type.
+  usecase "Request Ride" as UC_Request
+  usecase "Calculate Route & ETA" as UC_Route
+  usecase "Find Nearby Eligible Drivers" as UC_Search
+  usecase "Broadcast Ride Request" as UC_Broadcast
 
-The Broadcast: The Dispatcher uses the Observer Pattern to ping these nearby drivers with the pending Ride request.
+  usecase "Register Vehicle" as UC_RegisterVehicle
+  usecase "Select Active Vehicle" as UC_SelectVehicle
+  usecase "Go Online / Set Availability" as UC_Availability
+  usecase "Accept Ride" as UC_Accept
+  usecase "Start Ride" as UC_Start
 
-Phase 3: Acceptance & Transit
-The Match: A nearby driver hits "Accept". The Dispatcher locks that driver (sets them to unavailable) and assigns them to the Ride.
+  usecase "Confirm Ride End" as UC_ConfirmEnd
+  usecase "Complete Ride" as UC_Complete
+  usecase "Process Payment" as UC_Pay
+}
 
-Passenger Notification: The Dispatcher immediately fires a notification back to the Passenger: "Driver Ken is on the way in a Standard Car!"
+User --> UC_Register
+User --> UC_Login
+User --> UC_History
 
-State Transitions: The Ride uses the State Pattern to safely transition from RequestedState -> AcceptedState -> InTransitState.
+Passenger --> UC_Request
+Passenger --> UC_ConfirmEnd
 
-Phase 4: Completion & Ledger
-Dual Confirmation: Both the driver and passenger trigger confirmEnd() when they arrive.
+Driver --> UC_RegisterVehicle
+Driver --> UC_SelectVehicle
+Driver --> UC_Availability
+Driver --> UC_Accept
+Driver --> UC_Start
+Driver --> UC_ConfirmEnd
 
-Security Gate: The Ride transitions to CompletedState. The system checks isPayable() to ensure we aren't charging for a ride that was cancelled or is still driving.
+UC_Request .> UC_Route : <<include>>
+UC_Request .> UC_Search : <<include>>
+UC_Request .> UC_Broadcast : <<include>>
+UC_ConfirmEnd .> UC_Complete : <<include>>
+UC_Complete .> UC_Pay : <<include>>
 
-The Split: The PaymentGateway calculates the final fare using the injected PricingStrategy (Strategy Pattern). It extracts the 20% platform fee and credits the remaining balance to the Driver's account.
+MapProvider --> UC_Route
+MapProvider --> UC_Search
+PaymentGateway --> UC_Pay
+@enduml
+```
 
-The Receipt: The heavy Ride object is converted into an immutable RideRecord (DTO) and saved to both the Passenger's and Driver's ride histories.
+## Notes
+
+- `Passenger` and `Driver` are specialized actors that inherit shared behavior from `User`.
+- Shared use cases: registration, login, and ride history.
+- Passenger-specific and driver-specific actions remain separate.
