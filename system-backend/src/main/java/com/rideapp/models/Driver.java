@@ -30,6 +30,11 @@ public class Driver extends User implements Observer {
     }
     // NEW: Step 3 & 5 - Driver actively chooses to accept
     public void tryAcceptRide(Ride ride) {
+        // PROTECT AGAINST THE CRASH FOUND BY THE TEST
+        if (ride == null || ride.getOrigin() == null) {
+            System.out.println("❌ [ERROR] Cannot accept ride: Ride location is missing!");
+            return; 
+        }
         System.out.println("👉 [ACTION] " + getUsername() + " clicked 'Accept'...");
         
         boolean success = RideDispatcher.getInstance(null).assignRideToDriver(this, ride);

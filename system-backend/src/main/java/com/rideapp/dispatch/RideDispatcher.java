@@ -94,9 +94,13 @@ public Ride requestRide(Passenger passenger, Location origin, Location destinati
             System.out.println("[DISPATCHER] No drivers available nearby within 5km.");
             return null;
         }
+        
 
         // 2. Broadcast the push notification to all of them
         for (Driver driver : nearbyDrivers) {
+            if (driver.getActiveVehicle() == null) {
+                continue; // Skip drivers with missing vehicle data
+            }       
             driver.receivePushNotification(newRide, estimatedFare);
         }
 
@@ -109,6 +113,10 @@ public Ride requestRide(Passenger passenger, Location origin, Location destinati
     private List<Driver> findNearbyEligibleDrivers(Location pickupLocation, List<String> acceptableTypes) {
         List<Driver> eligible = new ArrayList<>();
         for (Driver driver : onlineDrivers) {
+            if (driver.getActiveVehicle() == null) {
+                System.out.println("⚠️ [WARN] Skipping Driver " + driver.getUsername() + ": No active vehicle found.");
+                continue; // Skip drivers with missing vehicle data
+            }
             if (!driver.isAvailable() || !acceptableTypes.contains(driver.getActiveVehicle().getVehicleType())) continue;
             
             double distance = mapProvider.getStraightLineDistance(driver.getCurrentLocation(), pickupLocation);
